@@ -2,32 +2,54 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-np.random.seed(3)
+def seed_point(v):
+    x = y = 0
+    if np.random.randint(2) == 0:
+        x, y = np.random.randint(2) * (len(v)-1), int(np.random.rand() * len(v))
+    else:
+        y, x = np.random.randint(2) * (len(v)-1), int(np.random.rand() * len(v))
 
-def generate_path():
-    pass
+    v[x][y] = 1
+    return x, y
 
-def gen_rand_line(length):
-    line_data = np.empty((2,length))
-    line_data[:, 0] = np.random.rand(2)
-    print(line_data)
-    for index in range(1, length):
-        step = (np.random.rand(2) - 0.5)*1
-        line_data[:, index] = line_data[:, index-1] + step
-        print(line_data)
-    return line_data
+def walk_point(x, y, v):
+    stepcount = 0
+    while stepcount < 50000:
+        new_x = new_y = 0
 
+        if x-1 < 0:
+            new_x = x + np.random.randint(2)
+        elif x+1 >= len(v):
+            new_x = x + np.random.randint(2) - 1
+        else:
+            new_x = x + np.random.randint(3) - 1
 
+        if y-1 < 0:
+            new_y = y + np.random.randint(2)
+        elif y+1 >= len(v):
+            new_y = y + np.random.randint(2) - 1
+        else:
+            new_y = y + np.random.randint(3) - 1
+
+        v[x][y] = 0
+        x, y = new_x, new_y
+        v[x][y] = 1
+
+        if (x+1 < len(v) and v[x+1][y] == 1) or (x-1 >= 0 and v[x-1][y] == 1) or (y+1 < len(v[0]) and v[x][y+1] == 1) or (y-1 >= 0 and v[x][y-1] == 1):
+            break;
+
+        stepcount += 1
 
 def main():
-    line = gen_rand_line(5)
-    print(line)
-#    fig = plt.figure()
-#    ax = fig.add_subplot()
-#    data = [(0,0)]
-#    lines = [ax.plot(dat[0, 0:1], dat[1, 0:1])[0] for dat in data]
-#    line_ani = animation.FuncAnimation(fig, append_to_path, 100, fargs=(data, lines), interval=50)
-#    plt.show()
+    v = np.zeros((1000,1000))
+    v[int(len(v)/2)][int(len(v)/2)] = 1
+
+    for i in range(4000):
+        x, y = seed_point(v)
+        walk_point(x, y, v)
+
+    plt.imshow(v)
+    plt.show()
 
 if __name__ == '__main__':
     main()
