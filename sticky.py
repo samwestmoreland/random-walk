@@ -1,55 +1,76 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 
-def seed_point(v):
-    x = y = 0
-    if np.random.randint(2) == 0:
-        x, y = np.random.randint(2) * (len(v)-1), int(np.random.rand() * len(v))
-    else:
-        y, x = np.random.randint(2) * (len(v)-1), int(np.random.rand() * len(v))
+gravity = 1 # a number between 0 and 1
+dims = 200
+particles = 100000
+steps = 1000
+draw_every = 300
+np.random.seed = 2342354
 
-    v[x][y] = 1
-    return x, y
+def force(pos):
+    global dims
+    distance = pos - dims/2
+    if distance > 0:
+        return gravity/(distance**2)
+    if distance < 0:
+        return -gravity/(distance**2)
+    return 0
 
-def walk_point(x, y, v):
-    stepcount = 0
-    while stepcount < 50000:
-        new_x = new_y = 0
-
-        if x-1 < 0:
-            new_x = x + np.random.randint(2)
-        elif x+1 >= len(v):
-            new_x = x + np.random.randint(2) - 1
+def calculate_new(x):
+    global dims
+    new_x = 0
+    rand3 = np.random.randint(3) - 1
+    rand2 = np.random.randint(2) # For boundaries
+    if x - 1 < 0:
+        new_x = x + rand2
+    elif x + 1 >= dims:
+        new_x = x - rand2
+    else: # We are not on a boundary
+        rand = np.random.rand()
+        left, right = 0.33, 0.67
+        left += left * force(x)
+        right += right * force(x)
+        if rand < left:
+            new_x = x - 1
+        elif rand > right:
+            new_x = x + 1
         else:
-            new_x = x + np.random.randint(3) - 1
+            new_x = x
+    return new_x
 
-        if y-1 < 0:
-            new_y = y + np.random.randint(2)
-        elif y+1 >= len(v):
-            new_y = y + np.random.randint(2) - 1
-        else:
-            new_y = y + np.random.randint(3) - 1
+fg = plt.figure()
+ax = fg.gca()
 
-        v[x][y] = 0
+arr = np.zeros((dims,dims))
+im = ax.imshow(arr, cmap='Greys')
+for i in range(particles):
+    x = int(np.random.rand(1)*len(arr))
+    y = int(np.random.rand(1)*len(arr[0]))
+    if arr[x][y] == 1:
+        continue
+    arr[x][y] = 1
+    for j in range(steps):
+        if (x+1 < len(arr) and arr[x+1][y] == 1) \
+        or (x-1 >= 0 and arr[x-1][y] == 1) \
+        or (y+1 < len(arr[0]) and arr[x][y+1] == 1) \
+        or (y-1 >= 0 and arr[x][y-1] == 1) \
+        or (x+1 < len(arr) and y+1 < len(arr) and arr[x+1][y+1] == 1) \
+        or (x+1 < len(arr) and y-1 >= 0 and arr[x+1][y-1] == 1) \
+        or (x-1 >= 0 and y+1 < len(arr) and arr[x-1][y+1] == 1) \
+        or (x-1 >= 0 and y-1 >= 0 and arr[x-1][y-1] == 1):
+            break
+
+        new_x = calculate_new(x)
+        new_y = calculate_new(y)
+
+        arr[x][y] = 0
         x, y = new_x, new_y
-        v[x][y] = 1
+        arr[x][y] = 1
 
-        if (x+1 < len(v) and v[x+1][y] == 1) or (x-1 >= 0 and v[x-1][y] == 1) or (y+1 < len(v[0]) and v[x][y+1] == 1) or (y-1 >= 0 and v[x][y-1] == 1):
-            break;
+        if i%draw_every == 0:
+            im.set_data(arr)
+            plt.draw(), plt.pause(1e-2)
+            im.autoscale()
 
-        stepcount += 1
-
-def main():
-    v = np.zeros((1000,1000))
-    v[int(len(v)/2)][int(len(v)/2)] = 1
-
-    for i in range(4000):
-        x, y = seed_point(v)
-        walk_point(x, y, v)
-
-    plt.imshow(v)
-    plt.show()
-
-if __name__ == '__main__':
-    main()
+plt.show()
